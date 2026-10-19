@@ -1,0 +1,321 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventario de productos</title>
+</head>
+<body>
+
+    <h1>Inventario de productos</h1>
+
+    <h3>Datos del producto</h3>
+
+    <label>Codigo:</label>
+    <input type="number" id="codigo">
+    <br><br>
+
+    <label>Nombre:</label>
+    <input type="text" id="nombre">
+    <br><br>
+
+    <label>Cantidad:</label>
+    <input type="number" id="cantidad">
+    <br><br>
+
+    <label>Costo:</label>
+    <input type="number" id="costo" step="0.01">
+    <br><br>
+
+    <button onclick="agregar()">Agregar</button>
+    <button onclick="buscar()">Buscar</button>
+    <button onclick="eliminar()">Eliminar</button>
+    <button onclick="mostrarLista()">Mostrar listado</button>
+    <button onclick="extraerPrimero()">Extraer primero</button>
+    <button onclick="extraerUltimo()">Extraer ultimo</button>
+    <button onclick="mostrarInverso()">Listado inverso</button>
+    <button onclick="limpiar()">Limpiar campos</button>
+
+    <h3>Detalle de las operaciones</h3>
+    <div id="resultado"></div>
+
+    <script>
+        class Nodo {
+            constructor(codigo, nombre, cantidad, costo) {
+                this.codigo = codigo;
+                this.nombre = nombre;
+                this.cantidad = cantidad;
+                this.costo = costo;
+                this.anterior = null;
+                this.siguiente = null;
+            }
+        }
+
+        class ListaDoble {
+            constructor() {
+                this.primero = null;
+                this.ultimo = null;
+            }
+
+            agregar(codigo, nombre, cantidad, costo) {
+                let nuevo = new Nodo(codigo, nombre, cantidad, costo);
+
+                if (this.primero === null) {
+                    this.primero = nuevo;
+                    this.ultimo = nuevo;
+                    return "producto agregado correctamente.";
+                }
+
+                let actual = this.primero;
+
+                while (actual !== null && actual.codigo < codigo) {
+                    actual = actual.siguiente;
+                }
+
+                if (actual !== null && actual.codigo === codigo) {
+                    return "error: el codigo ya existe.";
+                }
+
+                if (actual === this.primero) {
+                    nuevo.siguiente = this.primero;
+                    this.primero.anterior = nuevo;
+                    this.primero = nuevo;
+                } else if (actual === null) {
+                    nuevo.anterior = this.ultimo;
+                    this.ultimo.siguiente = nuevo;
+                    this.ultimo = nuevo;
+                } else {
+                    nuevo.anterior = actual.anterior;
+                    nuevo.siguiente = actual;
+                    actual.anterior.siguiente = nuevo;
+                    actual.anterior = nuevo;
+                }
+
+                return "Producto agregado correctamente.";
+            }
+
+            buscar(codigo) {
+                let actual = this.primero;
+
+                while (actual !== null && actual.codigo < codigo) {
+                    actual = actual.siguiente;
+                }
+
+                if (actual !== null && actual.codigo === codigo) {
+                    return actual;
+                }
+
+                return null;
+            }
+
+            eliminar(codigo) {
+                let actual = this.buscar(codigo);
+
+                if (actual === null) {
+                    return null;
+                }
+
+                if (actual.anterior !== null) {
+                    actual.anterior.siguiente = actual.siguiente;
+                } else {
+                    this.primero = actual.siguiente;
+                }
+
+                if (actual.siguiente !== null) {
+                    actual.siguiente.anterior = actual.anterior;
+                } else {
+                    this.ultimo = actual.anterior;
+                }
+
+                return actual;
+            }
+
+            extraerPrimero() {
+                if (this.primero === null) {
+                    return null;
+                }
+
+                return this.eliminar(this.primero.codigo);
+            }
+
+            extraerUltimo() {
+                if (this.ultimo === null) {
+                    return null;
+                }
+
+                return this.eliminar(this.ultimo.codigo);
+            }
+
+            obtenerLista() {
+                let actual = this.primero;
+                let productos = [];
+
+                while (actual !== null) {
+                    productos.push(actual);
+                    actual = actual.siguiente;
+                }
+
+                return productos;
+            }
+
+            obtenerInverso() {
+                let actual = this.ultimo;
+                let productos = [];
+
+                while (actual !== null) {
+                    productos.push(actual);
+                    actual = actual.anterior;
+                }
+
+                return productos;
+            }
+        }
+
+        let inventario = new ListaDoble();
+
+        function obtenerCodigo() {
+            let valor = document.getElementById("codigo").value;
+
+            if (valor.trim() === "") {
+                mostrarMensaje("Ingresa un codigo.");
+                return null;
+            }
+
+            let codigo = Number(valor);
+
+            if (!Number.isSafeInteger(codigo) || codigo < 0) {
+                mostrarMensaje("El codigo debe ser un entero no negativo.");
+                return null;
+            }
+
+            return codigo;
+        }
+
+        function agregar() {
+            let codigo = obtenerCodigo();
+            if (codigo === null) return;
+
+            let nombre = document.getElementById("nombre").value.trim();
+            let cantidadTexto = document.getElementById("cantidad").value;
+            let costoTexto = document.getElementById("costo").value;
+
+            if (nombre === "" || cantidadTexto.trim() === "" ||
+                costoTexto.trim() === "") {
+                mostrarMensaje("completa todos los datos.");
+                return;
+            }
+
+            let cantidad = Number(cantidadTexto);
+            let costo = Number(costoTexto);
+
+            if (!Number.isSafeInteger(cantidad) || cantidad < 0) {
+                mostrarMensaje("la cantidad debe ser un entero no negativo.");
+                return;
+            }
+
+            if (!Number.isFinite(costo) || costo < 0) {
+                mostrarMensaje("el costo debe ser un numero no negativo.");
+                return;
+            }
+
+            mostrarMensaje(
+                inventario.agregar(codigo, nombre, cantidad, costo)
+            );
+        }
+
+        function buscar() {
+            let codigo = obtenerCodigo();
+            if (codigo === null) return;
+
+            let producto = inventario.buscar(codigo);
+
+            if (producto === null) {
+                mostrarMensaje("producto no encontrado.");
+            } else {
+                mostrarMensaje("producto encontrado:\n" + textoProducto(producto));
+            }
+        }
+
+        function eliminar() {
+            let codigo = obtenerCodigo();
+            if (codigo === null) return;
+
+            let producto = inventario.eliminar(codigo);
+
+            if (producto === null) {
+                mostrarMensaje("producto no encontrado.");
+            } else {
+                mostrarMensaje("producto eliminado:\n" + textoProducto(producto));
+            }
+        }
+
+        function extraerPrimero() {
+            let producto = inventario.extraerPrimero();
+
+            if (producto === null) {
+                mostrarMensaje("la lista esta vacia.");
+            } else {
+                mostrarMensaje("primer producto extraido:\n" + textoProducto(producto));
+            }
+        }
+
+        function extraerUltimo() {
+            let producto = inventario.extraerUltimo();
+
+            if (producto === null) {
+                mostrarMensaje("la lista esta vacia.");
+            } else {
+                mostrarMensaje("ultimo producto extraido:\n" + textoProducto(producto));
+            }
+        }
+
+        function mostrarLista() {
+            mostrarProductos(
+                "listado ordenado por codigo:",
+                inventario.obtenerLista()
+            );
+        }
+
+        function mostrarInverso() {
+            mostrarProductos(
+                "listado en orden inverso:",
+                inventario.obtenerInverso()
+            );
+        }
+
+        function textoProducto(producto) {
+            return "Codigo: " + producto.codigo +
+                ", Nombre: " + producto.nombre +
+                ", Cantidad: " + producto.cantidad +
+                ", Costo: $" + producto.costo.toFixed(2);
+        }
+
+        function mostrarProductos(titulo, productos) {
+            let texto = titulo + "\n";
+
+            if (productos.length === 0) {
+                texto += "no hay productos en la lista.";
+            } else {
+                for (let producto of productos) {
+                    texto += "\n" + textoProducto(producto);
+                }
+            }
+
+            mostrarMensaje(texto);
+        }
+
+        function mostrarMensaje(mensaje) {
+            document.getElementById("resultado").textContent = mensaje;
+            document.getElementById("resultado").style.whiteSpace = "pre-line";
+        }
+
+        function limpiar() {
+            document.getElementById("codigo").value = "";
+            document.getElementById("nombre").value = "";
+            document.getElementById("cantidad").value = "";
+            document.getElementById("costo").value = "";
+        }
+    </script>
+
+</body>
+</html>
